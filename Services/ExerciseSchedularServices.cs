@@ -5,12 +5,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using workoutSchedule.Class;
+using workoutSchedule.Interfaces;
 
 namespace workoutSchedule.SchedularClasses
 {
-    public class ExerciseSchedular 
+    public class ExerciseSchedularServices : IExerciseSchedular
     {
-        public static List<Exercise>ReadData(string filepath)
+        public  List<Exercise>ReadData(string filepath)
         {
             // create a list of exercises
             var list = new List<Exercise>();
@@ -50,7 +51,7 @@ namespace workoutSchedule.SchedularClasses
             }
             return list;
         }
-        public static void GenerateWorkoutSchedule(List<Exercise> exerciseList,bool isBeginner,int exerciseNumber)
+        public  void GenerateWorkoutSchedule(List<Exercise> exerciseList,bool isBeginner,int exerciseNumber)
         {
             int counter = 0;
             // check if number entered is valid

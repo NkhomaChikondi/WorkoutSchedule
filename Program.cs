@@ -9,6 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Xml.Linq;
 using workoutSchedule.Class;
 using workoutSchedule.SchedularClasses;
+using workoutSchedule.Interfaces;
+using workoutSchedule.Services;
 
 namespace workoutSchedule
 {
@@ -16,111 +18,71 @@ namespace workoutSchedule
     {
         public static void Main(string[] args)
         {
+            string file = null;
+            bool isBeginner = false;
+            int exerciseNumber = 0;
+
             // register dependencies
-            var serviceProvider = new ServiceCollection().AddSingleton<IDataManager, DataManagerService>().BuildServiceProvider();
+            var serviceProvider = new ServiceCollection().AddSingleton<IDataManager, DataManagerServices>().BuildServiceProvider();
+            var exerciseProvider = new ServiceCollection().AddSingleton<IExerciseSchedular, ExerciseSchedularServices>().BuildServiceProvider();
+            var userInputProvider = new ServiceCollection().AddSingleton<IUserInputManager, userInputManagerServices>().BuildServiceProvider();
+
+            // Resolve dependencies
+            var dataServices = serviceProvider.GetRequiredService<IDataManager>();
+            var exerciseServices = exerciseProvider.GetRequiredService<IExerciseSchedular>();
+            var userinputServices = userInputProvider.GetRequiredService<IUserInputManager>();
 
             // get file 
             try
             {
-
+                file = dataServices.getFile();
             }
             catch (Exception)
             {
 
-                throw;
+                Console.WriteLine("Error: File does not exist");
+                return;
             }
 
-            bool isBeginner = false;
-            string workoutLevel = null;
-            int exerciseNumber = 0;
-            bool shouldRun = false;
-
-
-            // get file from directory            
-            string fullPath = "C:\\Users\\User\\Documents\\Angle Dimension\\Workout Schedule\\workoutSchedule\\Data\\workout_schedule_gym_exercises.csv";
-            // check if file exist
-            if (File.Exists(fullPath) )
+            // read the data
+            var exerciseList = exerciseServices.ReadData(file);
+            // get user level
+            try
             {
-                // pass the data to a list of exercises
-                List<Exercise> exercises = ExerciseSchedular.ReadData(fullPath);
-
-                //get inputs from a user
-                Console.WriteLine("Welcome to Chikondi gym center, please enter your name:");
-                string fullName = Console.ReadLine();
-                
-                // handle situation where user has not specified the name
-                if (fullName == "")
-                    fullName = "User";
-
-                // choose workout level
-                Console.WriteLine($"Hello {fullName}, this gym has got 2 workout levels:");                
-                Console.WriteLine("1. Beginner");
-                Console.WriteLine("2. Advanced");
-
-                // the program will give the users 2 chances to enter correct number if incorrect one is inputed
-                for (int i = 0; i < 2; i++)
-                {
-                    int userLevel = userInputManager.GetUserlevel(1,2);
-                    if (userLevel.Equals(1))
-                    {
-                        workoutLevel = "Beginner";
-                        isBeginner = true;
-                        shouldRun = true;
-                        break;
-                       
-                    }
-                    else if (userLevel.Equals(2))
-                    {
-                        workoutLevel = "Advanced";
-                        isBeginner = false;
-                        shouldRun = true;
-                        break;
-                        
-                    }
-                    else
-                    {
-                        Console.WriteLine("Error: Level number is between 1 and 2");
-                        shouldRun = false;                        
-                    }                        
-                }         
-                if(shouldRun)
-                {
-                    Console.WriteLine($"you have selected {workoutLevel} level. ");
-
-                    Console.WriteLine($"Enter/specify the number of exercises you want for your schedule.(1 to {exercises.Count()})\n" +
-                        $"Note: atleast 1 exercise required. Default is 3 exercises if not specified. ");
-
-                    // handle exceptions if the user hasnt specified any number
-                    try
-                    {
-                        exerciseNumber = Convert.ToInt32(Console.ReadLine());
-                                                
-                    }
-                    catch (Exception)
-                    {
-                        // enforce default rule
-                        exerciseNumber = 3;
-                    }
-
-
-                    // call the GetUserWorkoutPreferance
-                    int workoutExerciseNumber = userInputManager.GetUserWorkoutPreferance(exerciseNumber);
-
-                    // call the generate  workout schedule method
-                    ExerciseSchedular.GenerateWorkoutSchedule(exercises, isBeginner, workoutExerciseNumber);
-
-                }
-               
-               
-
+                isBeginner = userinputServices.isBeginner();
             }
-            else
-            { Console.WriteLine("Error: File not found"); }            
-           
-        }
-        string getExercise()
-        {
+            catch (Exception)
+            {
+                Console.WriteLine("Error: No option was selected");
+                return;
+            }
 
+            // get number of exercise
+            try
+            {
+                exerciseNumber = userinputServices.GetExerciseNumber(isBeginner, exerciseList.Count());
+            }
+            catch (Exception)
+            {
+
+                exerciseNumber = 3;
+            }
+            // generate the schedule
+            try
+            {
+                exerciseServices.GenerateWorkoutSchedule(exerciseList, isBeginner, exerciseNumber);
+            }
+            catch (Exception)
+            {
+
+                Console.WriteLine("Error: Failed to generate the schedule");
+            }
         }
+
+    
+                
+               
+               
+
     }
 }
